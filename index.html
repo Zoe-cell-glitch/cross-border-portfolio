@@ -1,0 +1,474 @@
+﻿ <!DOCTYPE html>
+ <html lang="zh-CN">
+ <head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1.0">
+ <title>跨境运营 | 李</title>
+ <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+ <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+ <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=Kanit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+ <style>
+ *{margin:0;padding:0;box-sizing:border-box}
+ :root{--bg:#EEF2EC;--tx:#1C2E28;--ts:#5A7A6A;--p:#6BBF8A;--pl:rgba(107,191,138,0.1);--bd:rgba(28,46,40,0.05);--mw:1700px;--r:24px}
+ html{scroll-behavior:smooth;background:var(--bg);overflow-x:hidden}
+ body{font-family:Kanit,"Noto Sans SC",sans-serif;background:linear-gradient(180deg,#F2F6EF 0%,#EEF2EC 100%);color:var(--tx);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+ ::selection{background:var(--p);color:#fff}
+ .sc{max-width:var(--mw);margin:0 auto;padding:0 60px}
+ .grad{background:linear-gradient(180deg,#1C2E28 0%,#6BBF8A 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+ @keyframes sd{0%{transform:translateY(0);opacity:1}100%{transform:translateY(12px);opacity:0}}
+ @keyframes spin{0%{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+ @keyframes flt{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
+ @keyframes ml{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+ @keyframes mr{0%{transform:translateX(-50%)}100%{transform:translateX(0)}}
+@keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(107,191,138,0.3)}50%{transform:scale(1.04);box-shadow:0 0 20px 4px rgba(107,191,138,0.15)}}
+ ::-webkit-scrollbar{width:5px}.lazy-section{content-visibility:auto;contain-intrinsic-size:800px}
+ ::-webkit-scrollbar-track{background:var(--bg)}
+ ::-webkit-scrollbar-thumb{background:var(--p);border-radius:3px}
+ /* === GSAP Animation States === */
+ .gs_hide{opacity:0}
+ .gs_hide_card{opacity:0;transform:translateY(60px)}
+.about-portrait,.about-text,.about-stats{animation:aboutFade 0.8s ease-out forwards}
+.about-portrait{animation-delay:0.1s}
+.about-text{animation-delay:0.2s}
+.about-stats{animation-delay:0.3s}
+@keyframes aboutFade{0%{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+ .gs_hide_img{clip-path:inset(0 0 100% 0)}
+ .curtain{z-index:99999;position:fixed;inset:0;background:#EEF2EC;display:flex;align-items:center;justify-content:center;pointer-events:all}
+ .curtain.is-open{pointer-events:none}
+ .curtain-l{text-align:center;color:var(--tx);font-family:Kanit,sans-serif}
+ .curtain-l h2{font-size:clamp(2rem,5vw,4rem);font-weight:300;letter-spacing:0.15em;text-transform:uppercase;opacity:0.3}
+ .curtain-l .bar{width:40px;height:2px;background:var(--p);margin:16px auto;border-radius:2px}
+ .sec-title-hide{opacity:0;transform:scale(0.4) translateY(80px)}
+ @media(max-width:900px){.sc{padding:0 24px}}.hero-shape{will-change:transform}.marquee-img{will-change:transform}
+ </style>
+ </head>
+ <body>
+ <div class="curtain" id="curtain">
+   <div class="curtain-l">
+     <h2>Loading</h2>
+     <div class="bar"></div>
+   </div>
+ </div>
+ <div id="root"></div>
+ <script type="text/babel">
+ const{useState,useEffect,useRef,useCallback}=React;
+ /* === GSAP Integration - Hide elements on render === */
+ function useGSAPHide(selector){
+   useEffect(()=>{
+     document.querySelectorAll(selector).forEach(el=>el.classList.add("gs_hide"));
+   },[])
+ }
+ 
+ /* === FadeIn (fallback for non-GSAP elements) === */
+ function FI({children,delay=0,y=30,x=0,duration=.7}){
+   const ref=useRef(null);const[show,setShow]=useState(false);
+   useEffect(()=>{
+     const o=new IntersectionObserver(([e])=>{if(e.isIntersecting){setShow(true);o.disconnect()}},{threshold:0,margin:"50px"});
+     if(ref.current)o.observe(ref.current);return()=>o.disconnect()
+   },[]);
+   return React.createElement("div",{ref,style:{transition:"all "+duration+"s cubic-bezier(.25,.1,.25,1)",transitionDelay:delay+"s",transform:show?"translateY(0) translateX(0)":"translateY("+y+"px) translateX("+x+"px)",opacity:show?1:0}},children)
+ }
+ 
+ /* === Magnet === */
+ function MG({children,padding=100,strength=2}){
+   const ref=useRef(null);
+   const hM=useCallback(e=>{
+     const el=ref.current;if(!el)return;
+     const r=el.getBoundingClientRect();const x=e.clientX-r.left-r.width/2;const y=e.clientY-r.top-r.height/2;
+     if(Math.sqrt(x*x+y*y)<padding)el.style.transform="translate3d("+(x/strength)+"px,"+(y/strength)+"px,0)";else el.style.transform="translate3d(0,0,0)"
+   },[]);
+   const hL=useCallback(()=>{if(ref.current)ref.current.style.transform="translate3d(0,0,0)"},[]);
+   return React.createElement("div",{ref,onMouseMove:hM,onMouseLeave:hL,style:{transition:"transform .6s ease-in-out",willChange:"transform",display:"inline-block",cursor:"default"}},children)
+ }
+ 
+ /* === Contact Button === */
+ const CB=({onClick,label="Contact Me"})=>React.createElement("button",{onClick,style:{padding:"14px 40px",borderRadius:50,border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600,fontSize:"0.85rem",textTransform:"uppercase",letterSpacing:"0.15em",background:"linear-gradient(135deg, #1a3a2a, #6BBF8A)",color:"#fff",boxShadow:"0 4px 20px rgba(107,191,138,0.25)",transition:"all 0.3s ease"},onMouseEnter:e=>{e.target.style.transform="translateY(-2px)";e.target.style.boxShadow="0 8px 30px rgba(107,191,138,0.35)"},onMouseLeave:e=>{e.target.style.transform="translateY(0)";e.target.style.boxShadow="0 4px 20px rgba(107,191,138,0.25)"}},label);
+ 
+ /* === Navbar === */
+ function Navbar(){
+   const[sc,setSc]=useState(false);
+   useEffect(()=>{const h=()=>setSc(window.scrollY>80);window.addEventListener("scroll",h,{passive:true});return()=>window.removeEventListener("scroll",h)},[]);
+   const scr=(id)=>document.getElementById(id)?.scrollIntoView({behavior:"smooth"});
+    return(<nav style={{position:"fixed",top:0,left:0,right:0,zIndex:1e3,padding:sc?"16px 60px":"24px 60px",background:"rgba(238,242,236,0.78)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderBottom:sc?"1px solid var(--bd)":"1px solid rgba(28,46,40,0.04)",transition:"all 0.5s ease",display:"flex",justifyContent:"space-between",alignItems:"center",maxWidth:1700,margin:"0 auto"}}>
+     <div className="navbar-logo" style={{fontSize:"1.3rem",fontWeight:700,color:"var(--p)",letterSpacing:"-0.02em"}}>跨境运营</div>
+     <ul style={{display:"flex",gap:"48px",listStyle:"none",alignItems:"center"}}>
+       {[{l:"About",t:"about"},{l:"Skills",t:"skills"},{l:"Honors",t:"honors"},{l:"Projects",t:"projects"},{l:"Contact",t:"contact"}].map(n=>(
+         <li key={n.l} className="nav-link" style={{fontSize:"0.88rem",fontWeight:500,color:"var(--ts)",cursor:"pointer",textTransform:"uppercase",letterSpacing:"0.12em",transition:"color 0.3s"}} onClick={()=>scr(n.t)} onMouseEnter={e=>e.target.style.color="var(--p)"} onMouseLeave={e=>e.target.style.color="var(--ts)"}>{n.l}</li>
+       ))}
+       <li className="nav-cta"><CB onClick={()=>scr("contact")} label="Connect"/></li>
+     </ul>
+   </nav>)
+ }
+ 
+ /* === Hero === */
+ function Hero(){
+   const scr=(id)=>document.getElementById(id)?.scrollIntoView({behavior:"smooth"});
+   return(<section id="hero" style={{position:"relative",minHeight:"100vh",display:"flex",flexDirection:"column",overflow:"hidden",paddingTop:"120px"}}>
+      <video id="hero-video" autoPlay loop muted playsInline preload="metadata" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",zIndex:0}}>
+        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260429_114316_1c7889ad-2885-410e-b493-98119fee0ddb.mp4" type="video/mp4"/>
+      </video>
+      <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg, rgba(238,242,236,0.15) 0%, rgba(238,242,236,0) 40%, rgba(238,242,236,0) 60%, rgba(238,242,236,0.08) 100%)",zIndex:1}}/>
+     <div style={{position:"absolute",inset:0,zIndex:0,overflow:"hidden"}}>
+       {[0,1,2,3,4,5].map(i=>React.createElement("div",{key:i,className:"hero-shape",style:{position:"absolute",width:25+i*12,height:25+i*12,border:"1.5px solid rgba(107,191,138,"+(0.12+i*0.03)+")",borderRadius:"50%",top:(12+i*12)+"%",left:(3+i*16)+"%",animation:"spin "+(12+i*4)+"s linear infinite",opacity:0.5,willChange:"transform"}}))}
+       <div className="hero-shape" style={{position:"absolute",width:"300px",height:"300px",borderRadius:"50%",border:"1.5px solid rgba(107,191,138,0.06)",top:"60%",right:"8%",animation:"spin 25s linear infinite reverse"}}/>
+     </div>
+     <div style={{position:"relative",zIndex:1,flex:1,display:"flex",flexDirection:"column",justifyContent:"center",maxWidth:1700,margin:"0 auto",padding:"0 60px",width:"100%"}}>
+       <div className="hero-badge" style={{fontSize:"0.82rem",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.25em",color:"var(--p)",marginBottom:"10px"}}>Cross-Border E-Commerce</div>
+       <h1 className="hero-title grad" style={{fontSize:"clamp(3rem,10vw,8rem)",fontWeight:900,lineHeight:1,letterSpacing:"-0.04em",textTransform:"uppercase",marginBottom:"8px",overflow:"hidden"}}>
+         {"跨境运营".split("").map((c,i)=>React.createElement("span",{key:i,className:"title-ch",style:{display:"inline-block",overflow:"hidden",verticalAlign:"top"}},React.createElement("span",{className:"title-ch-in",style:{display:"block"}},c)))}
+       </h1>
+       <h2 className="hero-sub" style={{fontSize:"clamp(1.2rem,3.5vw,3rem)",fontWeight:300,lineHeight:1.2,letterSpacing:"-0.02em",color:"var(--ts)",marginBottom:"40px"}}>从选品到出海 · 跨境电商学习者</h2>
+       <div className="hero-cta" style={{display:"flex",gap:"16px"}}>
+         <CB onClick={()=>scr("projects")} label="View Projects"/>
+         <button style={{padding:"14px 40px",borderRadius:50,background:"transparent",color:"var(--tx)",fontSize:"0.85rem",fontWeight:500,border:"1.5px solid var(--bd)",cursor:"pointer",fontFamily:"inherit",textTransform:"uppercase",letterSpacing:"0.12em",transition:"all 0.3s"}} onClick={()=>scr("contact")} onMouseEnter={e=>{e.target.style.borderColor="var(--p)";e.target.style.color="var(--p)"}} onMouseLeave={e=>{e.target.style.borderColor="var(--bd)";e.target.style.color="var(--tx)"}}>Contact</button>
+       </div>
+     </div>
+     <div className="hero-portrait" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",padding:"0 60px 40px",maxWidth:1700,margin:"0 auto",width:"100%"}}>
+       <p className="hero-tagline" style={{fontSize:"clamp(0.7rem,1.2vw,1rem)",color:"var(--ts)",fontWeight:300,textTransform:"uppercase",letterSpacing:"0.1em",maxWidth:"280px",lineHeight:1.5}}>热爱跨境电商 · 专注Shopee、Amazon、TikTok Shop运营学习与研究</p>
+       <MG padding={100} strength={3}>
+         <div style={{width:160,height:160,borderRadius:"50%",background:"linear-gradient(135deg, var(--pl), var(--p))",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid rgba(107,191,138,0.3)",boxShadow:"0 0 60px rgba(107,191,138,0.15)"}}>
+           <div style={{fontSize:"3.5rem",fontWeight:700,color:"#fff",lineHeight:1}}>何</div>
+         </div>
+       </MG>
+     </div>
+   </section>)
+ }
+ 
+ /* === Marquee === */
+ const mImgs=["https://motionsites.ai/assets/hero-space-voyage-preview-eECLH3Yc.gif","https://motionsites.ai/assets/hero-codenest-preview-Cgppc2qV.gif","https://motionsites.ai/assets/hero-vex-ventures-preview-BczMFIiw.gif","https://motionsites.ai/assets/hero-stellar-ai-v2-preview-DjvxjG3C.gif","https://motionsites.ai/assets/hero-asme-preview-B_nGDnTP.gif","https://motionsites.ai/assets/hero-transform-data-preview-Cx5OU29N.gif","https://motionsites.ai/assets/hero-vitara-preview-Cjz2QYyU.gif","https://motionsites.ai/assets/hero-terra-preview-BFjrCr7T.gif","https://motionsites.ai/assets/hero-skyelite-preview-DHaZIgUv.gif","https://motionsites.ai/assets/hero-aethera-preview-DknSlcTa.gif"];
+ function Marquee(){
+   const ref=useRef(null);const[speed,setSpeed]=useState(1);
+   useEffect(()=>{
+     const h=()=>{if(!ref.current)return;const r=ref.current.getBoundingClientRect();const v=window.innerHeight-r.top;const m=window.innerHeight+r.height;setSpeed(Math.max(0.3,Math.min(2,0.5+(Math.max(0,Math.min(1,v/m))*2))))};
+     window.addEventListener("scroll",h,{passive:true});h();return()=>window.removeEventListener("scroll",h)
+   },[]);
+   const r1=mImgs.slice(0,11);const r2=mImgs.slice(11);
+   const d1=36/speed;const d2=32/speed;
+   return(<section ref={ref} style={{padding:"60px 0",overflow:"hidden",background:"var(--bg)"}}>
+     <div className="marquee-label" style={{fontSize:"0.75rem",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.2em",color:"var(--ts)",textAlign:"center",marginBottom:"24px",opacity:0.6}}>Featured Work</div>
+     <div style={{display:"flex",gap:3,animation:"mr "+d1+"s linear infinite"}}>{[...r1,...r1].map((u,i)=><img key={i} src={u} alt="" className="marquee-img" style={{width:260,height:170,borderRadius:16,objectFit:"cover",flexShrink:0}} loading="lazy" decoding="async"/>)}</div>
+     <div style={{height:8}}/>
+     <div style={{display:"flex",gap:3,animation:"ml "+d2+"s linear infinite"}}>{[...r2,...r2].map((u,i)=><img key={i} src={u} alt="" className="marquee-img" style={{width:260,height:170,borderRadius:16,objectFit:"cover",flexShrink:0}} loading="lazy" decoding="async"/>)}</div>
+   </section>)
+ }
+ 
+ /* === About === */
+ function About(){
+   return(<section id="about" style={{minHeight:"100vh",display:"flex",alignItems:"center",position:"relative",overflow:"hidden",padding:"100px 0"}}>
+     <div style={{position:"absolute",inset:0,zIndex:0}}>
+       <div style={{position:"absolute",width:200,height:200,borderRadius:"50%",background:"radial-gradient(circle, rgba(107,191,138,0.12), transparent)",top:"5%",left:"3%",animation:"flt 7s ease-in-out infinite"}}/>
+       <div style={{position:"absolute",width:130,height:130,borderRadius:"50%",background:"radial-gradient(circle, rgba(107,191,138,0.08), transparent)",bottom:"10%",left:"8%",animation:"flt 9s ease-in-out infinite 1.5s"}}/>
+       <div style={{position:"absolute",width:180,height:180,borderRadius:"50%",background:"radial-gradient(circle, rgba(107,191,138,0.1), transparent)",top:"3%",right:"5%",animation:"flt 8s ease-in-out infinite 0.5s"}}/>
+       <div style={{position:"absolute",width:150,height:150,borderRadius:"50%",background:"radial-gradient(circle, rgba(107,191,138,0.06), transparent)",bottom:"8%",right:"6%",animation:"flt 10s ease-in-out infinite 2s"}}/>
+     </div>
+     <div className="sc section-about" style={{position:"relative",zIndex:1,width:"100%"}}>
+       <h2 className="section-title grad sec-title-hide" style={{fontSize:"clamp(2.5rem,10vw,7rem)",fontWeight:900,textTransform:"uppercase",textAlign:"center",lineHeight:1}}>About</h2>
+       <div className="about-grid" style={{display:"grid",gridTemplateColumns:"1fr 1.4fr",gap:"80px",alignItems:"center",marginTop:"60px"}}>
+         <div className="about-portrait"><MG padding={140} strength={4}>
+           <div style={{width:320,height:380,borderRadius:24,background:"linear-gradient(135deg, var(--pl), var(--p))",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
+             <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.1) 100%)"}}/>
+             <img src="portrait.jpg" alt="" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:24,transition:"transform 0.6s cubic-bezier(0.22,1,0.36,1)"}} onMouseEnter={e=>e.currentTarget.style.transform="scale(1.06)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}/>
+           </div></MG>
+         </div>
+         <div>
+           <div className="about-text"><h3 style={{fontSize:"1.6rem",fontWeight:600,marginBottom:"16px",color:"var(--tx)"}}>跨境电商运营助理</h3>
+           <p style={{fontSize:"1rem",color:"var(--ts)",lineHeight:2,marginBottom:"12px"}}>山东工商学院 | 电子信息工程专业2026届本科。具备数据分析与逻辑思维基础，熟练运用Excel，了解Python、SQL等数据分析工具。</p>
+                <p style={{fontSize:"1rem",color:"var(--ts)",lineHeight:2,marginBottom:"12px"}}>自学Shopee、Amazon、TikTok Shop等主流跨境平台的运营体系与增长逻辑，完成10+头部品牌的行业分析与全链路运营SOP梳理作为学习成果。</p>
+                <p style={{fontSize:"1rem",color:"var(--ts)",lineHeight:2,marginBottom:"12px"}}>英语四级（考研英语80分），具备跨境Listing文案与英文邮件撰写基础。善于用数据分析思维发现问题，以方法论指导学习。</p>
+                <p style={{fontSize:"1rem",color:"var(--ts)",lineHeight:2}}>作为跨境电商的积极学习者，非常渴望获得面试机会，愿意从零开始深入学习，一步步成长为专业的跨境电商运营人。</p></div>
+           <div className="about-stats">
+           {[{n:"4年",l:"山东工商学院·电子信息工程"},{n:"CET-4",l:"考研英语80分·六级已考"},{n:"10+",l:"品牌案例拆解·SOP构建"}].map(d=>(
+             <div key={d.l} style={{textAlign:"center",padding:"20px",borderRadius:16,border:"1px solid var(--bd)",background:"rgba(107,191,138,0.04)"}}>
+               <div style={{fontSize:"2rem",fontWeight:700,color:"var(--p)",marginBottom:"2px",fontFamily:"Kanit"}}>{d.n}</div>
+               <div style={{fontSize:"0.8rem",color:"var(--ts)",letterSpacing:"0.05em"}}>{d.l}</div>
+             </div>
+           ))}</div>
+         </div>
+       </div>
+     </div>
+   </section>)
+ }
+ 
+ /* === Skills === */
+ const sData=[
+   {n:"01",t:"数据分析",d:"学习Excel高级应用（数据透视表、VLOOKUP函数）、Python基础（Pandas数据清洗）、SQL基础（数据查询），尝试用数据思维辅助运营分析"},
+   {n:"02",t:"平台运营",d:"Shopee/Amazon/TikTok Shop/Temu平台规则与生态认知、跨境物流模式对比（FBA/自发货/海外仓）、Listing优化方法论，建立系统化运营知识体系"},
+   {n:"03",t:"英语能力",d:"英语四级（考研英语80分）、跨境Listing英文文案撰写、英语邮件沟通、跨境电商专业术语积累，具备基本跨境沟通与写作能力"},
+   {n:"04",t:"选品思维",d:"学习数据驱动选品方法论、竞品分析维度框架、市场需求判断与趋势分析方法、利润核算与定价策略，尝试从数据中发现市场机会"},
+   {n:"05",t:"研究能力",d:"10+头部品牌案例拆解与分析、全链路运营SOP梳理、行业研究报告撰写、信息整合与知识体系化，具备快速学习与研究能力"}
+ ];
+ function Skills(){
+   return(<section className="lazy-section" id="skills" style={{background:"#E6EBE4",borderRadius:"40px 40px 0 0",padding:"100px 0",position:"relative",zIndex:2}}>
+     <div className="sc section-skills">
+       <h2 className="section-title sec-title-hide" style={{fontSize:"clamp(2.5rem,10vw,7rem)",fontWeight:900,textTransform:"uppercase",textAlign:"center",lineHeight:1,color:"var(--tx)",marginBottom:"60px"}}>Skills</h2>
+       <div className="skills-list" style={{maxWidth:1100,margin:"0 auto"}}>
+         {sData.map((s,i)=>(
+           <div key={s.n} className={"skill-item gs_hide_card"} style={{display:"flex",gap:"40px",padding:"28px 0",borderBottom:i<sData.length-1?"1px solid rgba(28,46,40,0.06)":"none",alignItems:"flex-start"}}>
+             <div style={{fontSize:"clamp(2.5rem,6vw,5rem)",fontWeight:900,color:"var(--p)",lineHeight:1,fontFamily:"Kanit",minWidth:"80px"}}>{s.n}</div>
+             <div>
+               <h3 style={{fontSize:"clamp(1rem,2vw,1.6rem)",fontWeight:600,color:"var(--tx)",marginBottom:"6px",textTransform:"uppercase"}}>{s.t}</h3>
+               <p style={{fontSize:"clamp(0.85rem,1.2vw,1rem)",color:"var(--tx)",opacity:0.6,lineHeight:1.8,maxWidth:600,fontWeight:400}}>{s.d}</p>
+             </div>
+           </div>
+         ))}
+       </div>
+     </div>
+   </section>)
+ }
+ 
+/* === Honors === */
+function Honors(){
+  return(<section className="lazy-section" id="honors" style={{background:"#E6EBE4",borderRadius:"40px 40px 0 0",padding:"100px 0",position:"relative",zIndex:2,overflow:"hidden"}}>
+    <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg, rgba(28,46,40,0.75), rgba(107,191,138,0.3)), url(running.jpg) center/cover",zIndex:0}}/>
+    <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 30% 40%, rgba(255,255,255,0.06), transparent 60%)",zIndex:1}}/>
+    <div className="sc section-honors">
+      <h2 className="section-title sec-title-hide" style={{fontSize:"clamp(2.5rem,10vw,7rem)",fontWeight:900,textTransform:"uppercase",textAlign:"center",lineHeight:1,color:"#fff",marginBottom:"60px",position:"relative",zIndex:2,textShadow:"0 2px 16px rgba(0,0,0,0.3)"}}>Honors</h2>
+      <div style={{maxWidth:1100,margin:"0 auto"}}>
+        <div className="gs_hide_card" style={{position:"relative",zIndex:2,background:"rgba(255,255,255,0.08)",backdropFilter:"blur(10px)",borderRadius:20,boxShadow:"0 4px 24px rgba(0,0,0,0.12)",display:"flex",alignItems:"center",padding:"30px 34px",gap:"24px",transition:"transform 0.5s cubic-bezier(0.22,1,0.36,1), box-shadow 0.5s ease"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-4px)";e.currentTarget.style.boxShadow="0 12px 40px rgba(0,0,0,0.25)"}} onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 4px 24px rgba(0,0,0,0.12)"}}>
+          <div style={{fontSize:"2.5rem",flexShrink:0,width:72,height:72,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",background:"rgba(107,191,138,0.25)",border:"2px solid rgba(107,191,138,0.4)"}}>🏆</div>
+          <div style={{backdropFilter:"blur(6px)",background:"rgba(0,0,0,0.2)",borderRadius:12,padding:"12px 16px",flex:1}}>
+            <div style={{fontSize:"clamp(1rem,1.5vw,1.3rem)",fontWeight:700,color:"#fff",marginBottom:"4px",textShadow:"0 2px 8px rgba(0,0,0,0.3)"}}>连续3年 · 山东省大学生田径锦标赛双冠军</div>
+            <p style={{fontSize:"clamp(0.82rem,1vw,0.92rem)",color:"rgba(255,255,255,0.85)",lineHeight:1.7,textShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>女子甲组5000m、10000m双冠军（2023-2025），展现持久的耐力、抗压能力与坚定的目标感</p>
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"14px",position:"relative",zIndex:2}}>
+          <div className="gs_hide_card" style={{padding:"22px",borderRadius:16,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.07)",backdropFilter:"blur(8px)"}}>
+            <div style={{fontSize:"1.5rem",marginBottom:"8px",width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",background:"rgba(107,191,138,0.25)",border:"1px solid rgba(107,191,138,0.3)"}}>🏅</div>
+            <div style={{fontSize:"clamp(0.8rem,0.95vw,0.9rem)",fontWeight:600,color:"rgba(255,255,255,0.9)",marginBottom:"3px"}}>山东省优秀运动员</div>
+            <p style={{fontSize:"clamp(0.68rem,0.8vw,0.78rem)",color:"rgba(255,255,255,0.65)",lineHeight:1.5}}>2023-2025 · 校级先进个人（2024）</p>
+          </div>
+          <div className="gs_hide_card" style={{padding:"22px",borderRadius:16,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.07)",backdropFilter:"blur(8px)"}}>
+            <div style={{fontSize:"1.5rem",marginBottom:"8px",width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",background:"rgba(107,191,138,0.25)",border:"1px solid rgba(107,191,138,0.3)"}}>🎖️</div>
+            <div style={{fontSize:"clamp(0.8rem,0.95vw,0.9rem)",fontWeight:600,color:"rgba(255,255,255,0.9)",marginBottom:"3px"}}>iCAN创新创业大赛</div>
+            <p style={{fontSize:"clamp(0.68rem,0.8vw,0.78rem)",color:"rgba(255,255,255,0.65)",lineHeight:1.5}}>山东省第十七届 · 三等奖</p>
+          </div>
+          <div className="gs_hide_card" style={{padding:"22px",borderRadius:16,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.07)",backdropFilter:"blur(8px)"}}>
+            <div style={{fontSize:"1.5rem",marginBottom:"8px",width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",background:"rgba(107,191,138,0.25)",border:"1px solid rgba(107,191,138,0.3)"}}>🎓</div>
+            <div style={{fontSize:"clamp(0.8rem,0.95vw,0.9rem)",fontWeight:600,color:"rgba(255,255,255,0.9)",marginBottom:"3px"}}>校长奖学金</div>
+            <p style={{fontSize:"clamp(0.68rem,0.8vw,0.78rem)",color:"rgba(255,255,255,0.65)",lineHeight:1.5}}>2025-2026 · 荣誉奖学金 · GPA专业前20%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>)
+}
+ /* === Projects === */
+const pData=[
+  {n:"01",cat:"SHEIN",name:"快时尚·供应链革命",
+   img:"https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=600&h=400&fit=crop&auto=format",
+   metrics:[{v:"$45B+",l:"2024 GMV"},{v:"150+",l:"覆盖国家"},{v:"3000+",l:"日均上新"}],
+   desc:"小单快反C2M模式颠覆传统服装供应链，日均上新3000+款，7-14天从设计到上架。2024年GMV超450亿美元，覆盖150+国家。核心壁垒：柔性供应链+数据驱动选款+社媒矩阵运营。",
+   insights:["C2M柔性供应链，7-14天上新周期","数据驱动选款，小批量快速测试","TikTok/Instagram社媒矩阵引流","极致性价比+快速反应供应链"]},
+  {n:"02",cat:"Anker",name:"亚马逊·品牌化标杆",
+   img:"https://images.unsplash.com/photo-1600269452121-4f2416e55c28?w=600&h=400&fit=crop&auto=format",
+   metrics:[{v:"$2B+",l:"年营收"},{v:"1亿+",l:"全球用户"},{v:"TOP50",l:"BrandZ出海"}],
+   desc:"从Amazon充电配件起步，以产品力+review运营+品牌矩阵策略，连续多年入选BrandZ中国全球化品牌50强。全球用户超1亿，年营收超20亿美元。关键启示：聚焦细分赛道做到极致，广告投放与品牌建设并重。",
+   insights:["聚焦充电细分赛道，做深做透","产品力为核心，Review运营驱动增长","品牌矩阵策略，多品牌覆盖不同价位段","广告投放与品牌建设并重"]},
+  {n:"03",cat:"TikTok Shop",name:"内容电商·跨境新赛道",
+   img:"https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&h=400&fit=crop&auto=format",
+   metrics:[{v:"$200B+",l:"全球GMV"},{v:"20%+",l:"年增长"},{v:"10+",l:"主要市场"}],
+   desc:"全闭环电商模式（短视频+直播+商城），全球GMV突破200亿美元，东南亚年复合增长超20%。核心打法：达人矩阵+爆款短视频+节点大促，为社媒营销与流量获取提供实战框架。",
+   insights:["短视频+直播+商城全闭环模式","达人矩阵驱动内容生产和流量","爆款短视频+节点大促双轮驱动","兴趣推荐算法精准匹配用户"]},
+  {n:"04",cat:"Shopee",name:"选品分析·东南亚市场",
+   img:"https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&h=400&fit=crop&auto=format",
+   metrics:[{v:"$78B+",l:"平台GMV"},{v:"3.6亿+",l:"年度用户"},{v:"8个",l:"市场布局"}],
+   desc:"东南亚电商市场快速增长，Shopee以低价+社交化策略占据领先地位。选品核心：轻小件、高复购、低退货率品类优先。数据分析工具驱动选品决策，结合利润核算与竞品分析锁定蓝海品类。",
+   insights:["低价策略+社交化玩法占领心智","轻小件高复购品类优先切入","数据驱动选品，避开红海竞争","本地化运营，适应各国市场差异"]}
+];
+function Projects(){
+  const[pr,setPr]=useState(0);
+  useEffect(()=>{
+    const h=()=>{const el=document.getElementById("projects");if(!el)return;const r=el.getBoundingClientRect();const sh=window.innerHeight;setPr(Math.max(0,Math.min(1,(sh-r.top+200)/(r.height+sh-200))))};
+    window.addEventListener("scroll",h,{passive:true});h();return()=>window.removeEventListener("scroll",h)
+  },[]);
+  const cp=[
+    "polygon(64px 0, calc(100% - 14px) 0, calc(100% - 4px) 4px, 100% 14px, 100% calc(100% - 14px), calc(100% - 4px) calc(100% - 4px), calc(100% - 14px) 100%, 14px 100%, 4px calc(100% - 4px), 0 calc(100% - 14px), 0 64px)",
+    "polygon(0 14px, 4px 4px, 14px 0, calc(100% - 64px) 0, 100% 64px, 100% calc(100% - 14px), calc(100% - 4px) calc(100% - 4px), calc(100% - 14px) 100%, 64px 100%, 0 calc(100% - 64px))",
+    "polygon(0 14px, 4px 4px, 14px 0, calc(100% - 64px) 0, 100% 64px, 100% calc(100% - 64px), calc(100% - 64px) 100%, 14px 100%, 4px calc(100% - 4px), 0 calc(100% - 14px))",
+    "polygon(14px 0, calc(100% - 64px) 0, 100% 64px, 100% calc(100% - 14px), calc(100% - 4px) calc(100% - 4px), calc(100% - 14px) 100%, 64px 100%, 0 calc(100% - 64px), 0 14px, 4px 4px)"
+  ];
+  const of=[0,24,0,24];
+  return(<section className="lazy-section" id="projects" style={{background:"var(--bg)",borderRadius:"40px 40px 0 0",padding:"100px 0",position:"relative",zIndex:3}}>
+    <div className="sc section-projects" style={{position:"relative"}}>
+      <h2 className="section-title grad sec-title-hide" style={{fontSize:"clamp(2.5rem,10vw,7rem)",fontWeight:900,textTransform:"uppercase",textAlign:"center",lineHeight:1,marginBottom:"60px"}}>Projects</h2>
+      <div className="projects-stack" style={{position:"relative",height:pData.length*72+"vh"}}>
+        {pData.map((p,i)=>{
+          const ts=1-(pData.length-1-i)*0.04;
+          const sc=Math.max(ts,1-(pData.length-1-i)*0.04*(1-pr));
+          return(<div key={p.n} className="project-card-wrap" style={{position:"sticky",top:100,height:"72vh",paddingTop:i*60+of[i],borderRadius:0,zIndex:pData.length-i}}>
+            <div style={{height:"100%",clipPath:cp[i],background:"rgba(255,255,255,0.25)",padding:"1.5px",transform:"scale("+sc+")",transformOrigin:"top center",transition:"transform 0.05s"}}>
+              <div style={{height:"100%",clipPath:cp[i],background:"linear-gradient(135deg, rgba(28,46,40,0.88), rgba(107,191,138,0.25)), url("+p.img+") center/cover",position:"relative",display:"flex",flexDirection:"column",padding:"clamp(20px,3vw,36px)"}}>
+                <div style={{flex:"1"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"8px"}}>
+                    <span style={{fontSize:"clamp(1rem,2.5vw,2rem)",fontWeight:900,color:"var(--p)",fontFamily:"Kanit",lineHeight:1,textShadow:"0 2px 16px rgba(0,0,0,0.3)"}}>{p.n}</span>
+                    <span style={{fontSize:"clamp(0.65rem,1vw,0.82rem)",textTransform:"uppercase",letterSpacing:"0.12em",color:"#fff",padding:"4px 12px",borderRadius:20,border:"1px solid rgba(255,255,255,0.25)",background:"rgba(0,0,0,0.25)",backdropFilter:"blur(8px)"}}>{p.cat}</span>
+                  </div>
+                  <h3 style={{fontSize:"clamp(1.1rem,2.5vw,2rem)",fontWeight:700,color:"#fff",textShadow:"0 2px 20px rgba(0,0,0,0.4)",letterSpacing:"-0.02em",maxWidth:"70%"}}>{p.name}</h3>
+                </div>
+                <div>
+                  <div style={{display:"flex",gap:"clamp(12px,2vw,24px)",marginBottom:"10px"}}>
+                    {p.metrics.map((m,j)=><div key={j} style={{textAlign:"center"}}>
+                      <div style={{fontSize:"clamp(0.9rem,1.8vw,1.6rem)",fontWeight:700,background:"linear-gradient(135deg, #6BBF8A, #8FD9A8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",fontFamily:"Kanit",lineHeight:1.2}}>{m.v}</div>
+                      <div style={{fontSize:"clamp(0.6rem,0.8vw,0.78rem)",color:"rgba(255,255,255,0.65)",marginTop:"1px",letterSpacing:"0.03em"}}>{m.l}</div>
+                    </div>)}
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:"12px"}}>
+                    <p style={{fontSize:"clamp(0.65rem,0.9vw,0.82rem)",color:"rgba(255,255,255,0.8)",lineHeight:1.5,textShadow:"0 1px 8px rgba(0,0,0,0.3)"}}>{p.desc.length>55?p.desc.substring(0,55)+'...':p.desc}</p>
+                    <div style={{display:"flex",flexDirection:"column",gap:"2px"}}>
+                      {p.insights.slice(0,2).map((s,j)=><div key={j} style={{fontSize:"clamp(0.6rem,0.8vw,0.78rem)",color:"rgba(255,255,255,0.6)",display:"flex",alignItems:"center",gap:"6px"}}><span style={{width:4,height:4,borderRadius:"50%",background:"var(--p)",flexShrink:0}}/>{s}</div>)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>)
+        })}
+      </div>
+    </div>
+  </section>)
+}
+/* === Contact === */
+ function Contact(){
+   return(<section className="lazy-section" id="contact" style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden",padding:"80px 0"}}>
+     <div style={{position:"absolute",inset:0,zIndex:0}}>
+       {[1,2,3].map(i=>React.createElement("div",{key:i,className:"contact-ring",style:{position:"absolute",width:250+i*120,height:250+i*120,borderRadius:"50%",border:"1.5px solid rgba(107,191,138,0.05)",top:(8+i*22)+"%",left:(3+i*28)+"%",animation:"spin "+(18+i*6)+"s linear infinite"+(i%2?" reverse":"")}}))}
+     </div>
+     <div className="sc section-contact" style={{position:"relative",zIndex:1,textAlign:"center",maxWidth:700}}>
+       <h2 className="section-title grad sec-title-hide" style={{fontSize:"clamp(2rem,6vw,4.5rem)",fontWeight:700,textTransform:"uppercase",lineHeight:1.1,marginBottom:"20px",letterSpacing:"-0.03em"}}>Let&apos;s Connect</h2>
+       <p className="contact-desc gs_hide" style={{fontSize:"1rem",color:"var(--ts)",lineHeight:1.8,marginBottom:"48px"}}>你给我机会 我给你惊喜</p>
+       <div className="contact-cards gs_hide" style={{display:"flex",justifyContent:"center",gap:"20px",marginBottom:"48px",flexWrap:"wrap"}}>
+         {[{i:"&#9993;",l:"邮箱",v:"heluting_eie2026@163.com"},{i:"&#128242;",l:"微信",v:"15260575720"}].map(c=>(
+           <div key={c.l} style={{padding:"20px 28px",borderRadius:16,border:"1px solid var(--bd)",textAlign:"center",minWidth:170,background:"rgba(107,191,138,0.03)",transition:"all 0.4s cubic-bezier(0.22,1,0.36,1)",cursor:"default"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-4px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(107,191,138,0.15)"}} onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none"}}>
+             <div style={{fontSize:"1.3rem",marginBottom:"6px"}} dangerouslySetInnerHTML={{__html:c.i}}/>
+             <div style={{fontSize:"0.7rem",color:"var(--ts)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:"4px"}}>{c.l}</div>
+             <div style={{fontSize:"0.88rem",fontWeight:500,color:"var(--tx)"}}>{c.v}</div>
+           </div>
+         ))}
+       </div>
+       <div className="contact-avatar gs_hide">
+         <MG padding={80} strength={2}>
+           <div style={{width:72,height:72,borderRadius:"50%",margin:"0 auto",background:"linear-gradient(135deg, var(--pl), var(--p))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",color:"#fff",fontWeight:700,border:"2px solid rgba(107,191,138,0.3)",animation:"pulse 3s ease-in-out infinite"}}>何</div>
+         </MG>
+         <p style={{marginTop:"16px",fontSize:"0.78rem",color:"var(--ts)",opacity:0.6,letterSpacing:"0.08em"}}>&copy; 2026 跨境运营 &middot; All Rights Reserved</p>
+       </div>
+     </div>
+   </section>)
+ }
+ 
+ function App(){return(<><Navbar/><Hero/><Marquee/><About/><Skills/><Honors/><Projects/><Contact/></>)}
+ ReactDOM.createRoot(document.getElementById("root")).render(<React.StrictMode><App/></React.StrictMode>);
+ </script>
+ 
+ <!-- GSAP Animation Engine -->
+ <script>
+ (function(){
+ var $ = gsap.utils.toArray;
+ gsap.registerPlugin(ScrollTrigger);
+ 
+ // Wait for React + curtain ready
+ var obs = new MutationObserver(function(m, o){
+   var c = document.getElementById("curtain");
+   var root = document.getElementById("root");
+   if(c && root && root.children.length > 0) {
+     o.disconnect();
+     initAnimations(c);
+   }
+ });
+ try{obs.observe(document.getElementById("root")||document.body,{childList:true,subtree:true})}catch(e){initAnimations(document.getElementById("curtain"))} 
+ function initAnimations(curtain){
+   var tl = gsap.timeline({defaults:{ease:"power4.inOut"}});
+   
+   // === OPENING ===
+   // Phase 1: Curtain slide up
+   tl.to(curtain, {yPercent:-100, duration:1.0, ease:"power4.inOut", delay:0.3});
+   // Phase 2: Rotating shapes fade in
+   tl.fromTo(".hero-shape", {opacity:0, scale:0.3}, {opacity:0.5, scale:1, duration:0.6, stagger:0.05, ease:"power3.out"}, "-=0.6");
+   // Phase 3: Title characters - compression reveal
+   tl.fromTo(".title-ch-in", {scaleY:0.1, y:80, opacity:0}, {scaleY:1, y:0, opacity:1, duration:0.9, stagger:0.08, ease:"power4.out"}, "-=0.4");
+   // Phase 4: Badge + subtitle + CTA stagger
+   tl.fromTo(".hero-badge", {y:30, opacity:0}, {y:0, opacity:1, duration:0.8, ease:"power3.out"}, "-=0.3");
+   tl.fromTo(".hero-sub", {y:40, opacity:0}, {y:0, opacity:1, duration:0.9, ease:"power3.out"}, "-=0.2");
+   tl.fromTo(".hero-cta > *", {y:30, opacity:0}, {y:0, opacity:1, duration:0.8, stagger:0.12, ease:"power3.out"}, "-=0.3");
+   // Phase 5: Portrait + tagline
+   tl.fromTo(".hero-portrait", {y:40, opacity:0}, {y:0, opacity:1, duration:1, ease:"power3.out"}, "-=0.2");
+   // Phase 6: Navbar links
+   tl.fromTo(".navbar-logo, .nav-link, .nav-cta", {y:-20, opacity:0}, {y:0, opacity:1, duration:0.6, stagger:0.06, ease:"power2.out"}, "-=0.5");
+   // Phase 7: Curtain gone
+   tl.to(curtain, {autoAlpha:0, duration:0.3, onComplete:function(){curtain.style.display="none"}});
+   
+   // === SCROLL TRIGGERS ===
+   // Section titles: dramatic zoom-in
+   $(".section-title").forEach(function(el) {
+     gsap.fromTo(el, {scale:0.4, y:80, opacity:0}, {
+       scale:1, y:0, opacity:1, duration:1.0, ease:"power3.out",
+       scrollTrigger: {trigger:el.parentElement, start:"top 75%", toggleActions:"play none none reverse"}
+     });
+   });
+   
+   // About section: stagger
+   $(".about-portrait, .about-text, .about-stats").forEach(function(el) {
+     gsap.fromTo(el, {y:60, opacity:0}, {
+       y:0, opacity:1, duration:1, ease:"power2.out",
+       scrollTrigger: {trigger:el.closest(".about-grid"), start:"top 75%", toggleActions:"play none none reverse"}
+     });
+   });
+   
+   // Skills: stagger cards
+   $(".skill-item").forEach(function(el, i) {
+     gsap.fromTo(el, {y:40, opacity:0}, {
+       y:0, opacity:1, duration:0.8, delay:i*0.1, ease:"power2.out",
+       scrollTrigger: {trigger:".skills-list", start:"top 75%", toggleActions:"play none none reverse"}
+     });
+   });
+   
+   // Project cards: stagger entry
+   $(".project-card-wrap").forEach(function(wrap, i) {
+     gsap.fromTo(wrap, {y:80, opacity:0}, {
+       y:0, opacity:1, duration:1, delay:i*0.2, ease:"power3.out",
+       scrollTrigger: {trigger:".projects-stack", start:"top 70%", toggleActions:"play none none reverse"}
+     });
+   });
+   
+    
+    // Honors: stagger
+    $("#honors .gs_hide_card").forEach(function(el, i) {
+      gsap.fromTo(el, {y:30, opacity:0}, {
+        y:0, opacity:1, duration:0.7, delay:i*0.12, ease:"power2.out",
+        scrollTrigger: {trigger:".section-honors", start:"top 80%", toggleActions:"play none none reverse"}
+      });
+    });
+
+   // Contact: stagger
+   $(".contact-desc, .contact-cards, .contact-avatar").forEach(function(el, i) {
+     gsap.fromTo(el, {y:40, opacity:0}, {
+       y:0, opacity:1, duration:1, delay:i*0.15, ease:"power2.out",
+       scrollTrigger: {trigger:".section-contact", start:"top 75%", toggleActions:"play none none reverse"}
+     });
+   });
+   
+   // Clean up curtain
+   curtain.classList.add("is-open");
+ }
+ })();
+ </script>
+ </body>
+ </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
